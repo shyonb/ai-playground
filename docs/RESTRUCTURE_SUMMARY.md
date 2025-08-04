@@ -1,49 +1,69 @@
-# Project Structure Update Summary
+# Project Architecture Summary
 
-## ✅ Completed Restructuring
+## ✅ Final Clean Architecture
 
-The Azure Foundry API project has been successfully restructured into a clean, maintainable architecture.
+The Azure Foundry API project has been successfully restructured and cleaned into a production-ready, maintainable architecture.
 
-### New Project Structure
+### Current Project Structure
 
 ```
 azure-foundry-api/
-├── app/
-│   ├── __init__.py
-│   ├── models.py          # Pydantic models
+├── app/                   # Core application code
+│   ├── __init__.py        # Package initialization
 │   ├── config.py          # Configuration management
+│   ├── models.py          # Pydantic models (OpenAI compatible)
 │   └── dependencies.py    # FastAPI dependencies
-├── scripts/
-│   ├── README.md
-│   ├── chat_terminal.py   # Interactive chat client
-│   ├── test_azure_client.py
-│   └── test_api.py        # API testing script
-├── tests/
-│   └── __init__.py
-├── docs/
-├── infra/                 # Azure infrastructure files
-├── main.py               # FastAPI application
-├── run_dev.py            # Development server
-├── requirements.txt
-├── azure.yaml
-└── README.md
+├── scripts/               # Testing and utility scripts
+│   ├── README.md          # Scripts documentation  
+│   ├── chat_terminal.py   # Interactive async chat client
+│   ├── test_api.py        # Comprehensive API tests
+│   ├── test_azure_client.py # Azure client connection tests
+│   └── test_client.py     # Legacy test client
+├── tests/                 # Test framework
+│   └── __init__.py        # Test package initialization
+├── docs/                  # Documentation
+│   ├── DEPLOYMENT.md      # Deployment guide
+│   ├── GITHUB_SETUP.md    # GitHub integration guide
+│   ├── QUICK_START.md     # Quick start guide
+│   └── RESTRUCTURE_SUMMARY.md # This file
+├── infra/                 # Azure infrastructure (Bicep)
+│   ├── main.bicep         # Main deployment template
+│   ├── resources.bicep    # Resource definitions
+│   └── main.parameters.json # Deployment parameters
+├── main.py               # FastAPI application entry point
+├── run_dev.py            # Development server launcher
+├── requirements.txt      # Python dependencies
+├── azure.yaml           # Azure Developer CLI config
+├── Dockerfile           # Container definition
+├── .env                 # Environment variables (local)
+└── README.md            # Project documentation
 ```
 
-### Key Improvements
+### Architecture Principles
 
-1. **Modular Architecture**: Code is now organized into logical modules
-2. **Clean Imports**: All imports updated to use the new structure
-3. **Centralized Configuration**: Settings managed in `app/config.py`
-4. **Reusable Dependencies**: FastAPI dependencies in `app/dependencies.py`
-5. **Type Safety**: Proper Pydantic models with OpenAI compatibility
-6. **Testing Scripts**: Organized in `scripts/` directory
+1. **Separation of Concerns**: Clear boundaries between app logic, testing, docs, and infrastructure
+2. **Modular Design**: Core application code isolated in `app/` package
+3. **Comprehensive Testing**: Multiple testing approaches for different scenarios
+4. **Interactive Development**: Async chat terminal for real-time API testing
+5. **Documentation-Driven**: Complete documentation for all components
+6. **Infrastructure as Code**: Bicep templates for Azure resources
+
+### Key Features
+
+✅ **Modern FastAPI Architecture** - Clean, async Python web API
+✅ **Azure Foundry Integration** - Official Azure OpenAI client integration  
+✅ **Interactive Testing** - Async chat terminal with multi-turn conversations
+✅ **Comprehensive Test Suite** - Multiple testing scripts for different needs
+✅ **Complete Documentation** - Detailed guides for setup, deployment, and usage
+✅ **Container Ready** - Docker support with multi-stage builds
+✅ **Azure Native** - Bicep infrastructure templates for production deployment
 
 ### Verified Functionality
 
 ✅ **Health Endpoint** - `GET /health`
 ```json
 {
-  "status": "healthy",
+  "status": "healthy", 
   "message": "Azure Foundry API is running",
   "azure_endpoint": "https://shyon-playground-aifoundry-private.openai.azure.com"
 }
@@ -58,28 +78,60 @@ azure-foundry-api/
 ```
 
 ✅ **Chat Completions** - `POST /api/v1/chat/completions`
-- OpenAI-compatible message format
-- Proper token usage tracking
-- Multi-turn conversation support
+- OpenAI-compatible message format with conversation history
+- Proper token usage tracking and reporting
+- Multi-turn conversation support with context preservation
 
 ✅ **Text Generation** - `POST /api/v1/generate`
-- Single-turn text generation
-- Simplified prompt interface
+- Single-turn text generation for simple prompts
+- Simplified prompt interface without conversation context
 
-### Configuration
+### Testing Capabilities
 
-All configuration is centralized in `app/config.py` with environment variable support:
+**Interactive Chat Terminal** (`scripts/chat_terminal.py`):
+- Real-time async conversation testing
+- Command system (`/help`, `/health`, `/models`, `/mode`, `/history`)
+- Switch between chat and generate modes
+- Colored terminal output for better UX
 
-- `AZURE_FOUNDRY_ENDPOINT`
-- `AZURE_FOUNDRY_API_KEY`
-- `AZURE_FOUNDRY_MODEL`
-- `AZURE_FOUNDRY_API_VERSION`
+**Comprehensive API Tests** (`scripts/test_api.py`):
+- Full endpoint testing with detailed reporting
+- Performance timing and error handling validation
+- Configurable for local and deployed API testing
+
+**Azure Client Tests** (`scripts/test_azure_client.py`):
+- Direct Azure OpenAI client connection validation
+- Configuration troubleshooting and model availability checks
+
+### Configuration Management
+
+All configuration centralized in `app/config.py` with environment variable support:
+
+- `AZURE_FOUNDRY_ENDPOINT` - Azure OpenAI endpoint URL
+- `AZURE_FOUNDRY_API_KEY` - Authentication key
+- `AZURE_FOUNDRY_MODEL` - Default model (gpt-4o, gpt-35-turbo, etc.)
+- `AZURE_FOUNDRY_API_VERSION` - API version (2025-01-01-preview)
 
 ### Development Workflow
 
 1. **Start Development Server**:
    ```bash
    python run_dev.py
+   ```
+
+2. **Interactive Testing** (recommended):
+   ```bash
+   python scripts/chat_terminal.py
+   ```
+
+3. **Comprehensive Testing**:
+   ```bash
+   python scripts/test_api.py
+   ```
+
+4. **Azure Connection Validation**:
+   ```bash
+   python scripts/test_azure_client.py
    ```
 
 2. **Test API Endpoints**:

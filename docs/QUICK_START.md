@@ -12,12 +12,24 @@ I've created a complete, production-ready Azure Foundry API backend with the fol
 ### 📁 Project Structure
 ```
 azure-foundry-api/
-├── 🐍 Python FastAPI Backend
-│   ├── main.py              # Main FastAPI application
-│   ├── models.py            # Pydantic data models
-│   ├── config.py            # Configuration management
-│   ├── azure_foundry_client.py # Azure Foundry integration
-│   └── test_client.py       # API testing utilities
+├── 🐍 Core Application
+│   ├── main.py              # FastAPI application entry point
+│   ├── run_dev.py           # Development server launcher
+│   └── app/                 # Application code
+│       ├── config.py        # Configuration management
+│       ├── models.py        # Pydantic data models
+│       └── dependencies.py  # FastAPI dependencies
+├── 🧪 Testing & Scripts
+│   └── scripts/
+│       ├── chat_terminal.py    # Interactive API testing client
+│       ├── test_api.py         # Comprehensive API tests
+│       ├── test_azure_client.py # Azure client connection tests
+│       └── test_client.py      # Legacy test utilities
+├── 📚 Documentation
+│   └── docs/
+│       ├── DEPLOYMENT.md       # Deployment guide
+│       ├── GITHUB_SETUP.md     # GitHub integration
+│       └── QUICK_START.md      # This guide
 ├── 🐳 Containerization
 │   ├── Dockerfile           # Production container
 │   └── requirements.txt     # Python dependencies
@@ -70,11 +82,20 @@ AZURE_FOUNDRY_API_VERSION=2025-01-01-preview
 # Run the development server
 python run_dev.py
 
-# In another terminal (with venv activated), test the API
-python test_client.py --url http://localhost:8000 --key any-test-key-works
+# Test with interactive chat terminal (recommended)
+python scripts/chat_terminal.py
+
+# Or run comprehensive API tests
+python scripts/test_api.py --key any-test-key-works
+
+# Or use legacy test client
+python scripts/test_client.py --url http://localhost:8000 --key any-test-key-works
 ```
 
-**Note**: The current authentication accepts ANY Bearer token for testing. You can use any string as the API key (e.g., "test-key", "my-api-key", etc.).
+**Testing Notes**: 
+- The interactive `chat_terminal.py` provides the best testing experience with real-time chat
+- Authentication accepts ANY Bearer token for local testing
+- Use `/help` in the chat terminal to see all available commands
 
 ### Step 4: Deploy to Azure
 ```powershell
