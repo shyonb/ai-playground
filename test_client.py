@@ -27,7 +27,7 @@ class TestClient:
         """Test chat completion endpoint"""
         payload = {
             "message": "Hello, how are you today?",
-            "model": "gpt-4",
+            "model": "gpt-4.1",
             "max_tokens": 100,
             "temperature": 0.7
         }
@@ -50,7 +50,7 @@ class TestClient:
         """Test text generation endpoint"""
         payload = {
             "message": "Write a short poem about artificial intelligence",
-            "model": "gpt-4",
+            "model": "gpt-4.1",
             "max_tokens": 200,
             "temperature": 0.8
         }

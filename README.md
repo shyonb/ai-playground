@@ -30,19 +30,29 @@ A comprehensive FastAPI backend that integrates with Azure Foundry models, featu
 
 ### 1. Environment Setup
 
-```bash
-# Copy environment template
-cp .env.template .env
+```powershell
+# Create and activate virtual environment
+python -m venv venv
+.\venv\Scripts\Activate.ps1
 
-# Edit .env with your Azure Foundry details
+# If you get execution policy error, run this first:
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+
+# Create .env file with your Azure Foundry details
+@"
 AZURE_FOUNDRY_ENDPOINT=https://your-foundry-endpoint.openai.azure.com
 AZURE_FOUNDRY_API_KEY=your-api-key-here
-AZURE_FOUNDRY_DEPLOYMENT_NAME=gpt-4
+AZURE_FOUNDRY_DEPLOYMENT_NAME=gpt-4.1
+AZURE_FOUNDRY_API_VERSION=2025-01-01-preview
+"@ | Out-File -FilePath .env -Encoding utf8
 ```
 
 ### 2. Local Development
 
-```bash
+```powershell
+# Make sure virtual environment is activated
+.\venv\Scripts\Activate.ps1
+
 # Install dependencies
 pip install -r requirements.txt
 
@@ -55,20 +65,15 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
 ### 3. Test the API
 
-```bash
-# Run test suite
-python test_client.py
+```powershell
+# Run test suite (make sure venv is activated)
+python test_client.py --key any-test-key-works
 
-# Or test individual endpoints
-curl -X POST "http://localhost:8000/api/v1/chat/completions" \
-  -H "Authorization: Bearer test-key" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "message": "Hello, how are you?",
-    "model": "gpt-4",
-    "max_tokens": 100
-  }'
+# Or test individual endpoints with curl
+curl -X POST "http://localhost:8000/api/v1/chat/completions" -H "Authorization: Bearer any-test-key-works" -H "Content-Type: application/json" -d '{\"message\": \"Hello, how are you?\", \"model\": \"gpt-4.1\", \"max_tokens\": 100}'
 ```
+
+**Authentication Note**: The current implementation accepts ANY Bearer token for testing purposes. You can use any string as your API key (e.g., "test-key", "my-api-key", "development-token").
 
 ## API Endpoints
 
@@ -90,7 +95,7 @@ curl -X POST "http://localhost:8000/api/v1/chat/completions" \
 ```json
 {
   "message": "Explain quantum computing in simple terms",
-  "model": "gpt-4",
+  "model": "gpt-4.1",
   "max_tokens": 500,
   "temperature": 0.7
 }
@@ -101,7 +106,7 @@ curl -X POST "http://localhost:8000/api/v1/chat/completions" \
 ```json
 {
   "response": "Quantum computing is a revolutionary approach to computation...",
-  "model": "gpt-4",
+  "model": "gpt-4.1",
   "timestamp": "2024-01-15T10:30:00Z",
   "tokens_used": 156
 }

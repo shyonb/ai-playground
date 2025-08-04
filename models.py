@@ -7,7 +7,7 @@ from datetime import datetime
 from enum import Enum
 
 class ModelType(str, Enum):
-    GPT_4 = "gpt-4"
+    GPT_4 = "gpt-4.1"
     GPT_35_TURBO = "gpt-35-turbo"
     TEXT_EMBEDDING_ADA_002 = "text-embedding-ada-002"
 

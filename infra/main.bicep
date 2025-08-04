@@ -41,7 +41,7 @@ param frontDoorProfileName string = ''
 param azureFoundryEndpoint string
 
 @description('Azure Foundry deployment name')
-param azureFoundryDeploymentName string = 'gpt-4'
+param azureFoundryDeploymentName string = 'gpt-4.1'
 
 // Generate a unique token for resource names
 var resourceToken = toLower(uniqueString(subscription().id, environmentName, location))

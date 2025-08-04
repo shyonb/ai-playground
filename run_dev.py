@@ -4,10 +4,14 @@ Development server script
 """
 import uvicorn
 import os
+from dotenv import load_dotenv
 from config import get_settings
 
 def main():
     """Run the development server"""
+    # Load environment variables from .env file
+    load_dotenv()
+    
     settings = get_settings()
     
     # Validate required settings

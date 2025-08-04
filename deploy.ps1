@@ -13,7 +13,7 @@ param(
     [Parameter(Mandatory=$true)]
     [string]$AzureFoundryApiKey,
     
-    [string]$AzureFoundryDeploymentName = "gpt-4"
+    [string]$AzureFoundryDeploymentName = "gpt-4.1"
 )
 
 Write-Host "🚀 Starting Azure Foundry API Deployment" -ForegroundColor Green

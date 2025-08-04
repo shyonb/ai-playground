@@ -18,7 +18,7 @@ param(
     [Parameter(Mandatory=$true)]
     [string]$AzureFoundryApiKey,
     
-    [string]$AzureFoundryDeploymentName = "gpt-4"
+    [string]$AzureFoundryDeploymentName = "gpt-4.1"
 )
 
 Write-Host "🚀 Starting Azure Foundry API Deployment" -ForegroundColor Green
@@ -105,7 +105,7 @@ ENVIRONMENT_NAME=$1
 LOCATION=$2
 AZURE_FOUNDRY_ENDPOINT=$3
 AZURE_FOUNDRY_API_KEY=$4
-AZURE_FOUNDRY_DEPLOYMENT_NAME=${5:-"gpt-4"}
+AZURE_FOUNDRY_DEPLOYMENT_NAME=${5:-"gpt-4.1"}
 
 print_status "🚀 Starting Azure Foundry API Deployment"
 print_warning "Environment: $ENVIRONMENT_NAME"
@@ -194,7 +194,7 @@ azd env new my-foundry-api --location eastus
 # 3. Set required environment variables
 azd env set AZURE_FOUNDRY_ENDPOINT "https://your-foundry-endpoint.openai.azure.com"
 azd env set AZURE_FOUNDRY_API_KEY "your-api-key-here"
-azd env set AZURE_FOUNDRY_DEPLOYMENT_NAME "gpt-4"
+azd env set AZURE_FOUNDRY_DEPLOYMENT_NAME "gpt-4.1"
 
 # 4. Deploy infrastructure and application
 azd up
@@ -215,7 +215,7 @@ curl -X POST "https://your-frontdoor-endpoint.azurefd.net/api/v1/chat/completion
   -H "Content-Type: application/json" \
   -d '{
     "message": "Hello, world!",
-    "model": "gpt-4",
+    "model": "gpt-4.1",
     "max_tokens": 100
   }'
 ```

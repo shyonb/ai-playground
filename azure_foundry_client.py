@@ -20,7 +20,7 @@ class AzureFoundryClient:
     ):
         self.endpoint = endpoint or os.getenv("AZURE_FOUNDRY_ENDPOINT", "")
         self.api_key = api_key or os.getenv("AZURE_FOUNDRY_API_KEY", "")
-        self.deployment_name = deployment_name or os.getenv("AZURE_FOUNDRY_DEPLOYMENT_NAME", "gpt-4")
+        self.deployment_name = deployment_name or os.getenv("AZURE_FOUNDRY_DEPLOYMENT_NAME", "gpt-4.1")
         self.api_version = api_version
         
         if not self.endpoint or not self.api_key:
