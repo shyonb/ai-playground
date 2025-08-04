@@ -3,7 +3,7 @@
 param(
     [string]$AzureFoundryEndpoint,
     [string]$AzureFoundryApiKey,
-    [string]$AzureFoundryDeploymentName = "gpt-4"
+    [string]$AzureFoundryDeploymentName = "gpt-4.1"
 )
 
 Write-Host "🔧 Azure Foundry API - Initial Setup" -ForegroundColor Green
