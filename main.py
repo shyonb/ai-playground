@@ -3,18 +3,18 @@ FastAPI Backend for Azure Foundry Model Integration
 """
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from pydantic import BaseModel
-from functools import lru_cache
-from dotenv import load_dotenv
-import os
-import logging
-from typing import Optional, List
+from typing import Optional, List, cast, Any
 from datetime import datetime
+import logging
+import os
 from openai import AzureOpenAI
 
-# Load environment variables
-load_dotenv()
+from app.models import (
+    ChatRequest, ChatResponse, GenerateRequest, 
+    HealthResponse, ModelInfo, ChatMessage
+)
+from app.config import get_settings
+from app.dependencies import get_azure_openai_client, verify_token, clear_azure_client_cache
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -29,9 +29,6 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
-# Security
-security = HTTPBearer()
-
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
@@ -41,90 +38,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Models
-class ChatRequest(BaseModel):
-    message: str
-    model: Optional[str] = "gpt-4.1"
-    max_tokens: Optional[int] = 1000
-    temperature: Optional[float] = 0.7
-
-class ChatResponse(BaseModel):
-    response: str
-    model: str
-    timestamp: datetime
-    tokens_used: Optional[int] = None
-
-class HealthResponse(BaseModel):
-    status: str
-    timestamp: datetime
-    version: str
-
-class ModelInfo(BaseModel):
-    name: str
-    description: str
-    endpoint: str
-    status: str
-
-# Configuration
-class Config:
-    AZURE_FOUNDRY_ENDPOINT = os.getenv("AZURE_FOUNDRY_ENDPOINT", "")
-    AZURE_FOUNDRY_API_KEY = os.getenv("AZURE_FOUNDRY_API_KEY", "")
-    AZURE_FOUNDRY_DEPLOYMENT_NAME = os.getenv("AZURE_FOUNDRY_DEPLOYMENT_NAME", "gpt-4.1")
-    API_VERSION = os.getenv("AZURE_FOUNDRY_API_VERSION", "2025-01-01-preview")
-
-config = Config()
-
-# Azure OpenAI client dependency with proper caching and error handling
-@lru_cache()
-def get_azure_openai_client() -> AzureOpenAI:
-    """
-    Get Azure OpenAI client with LRU caching
-    This approach:
-    - Caches the client but allows for invalidation
-    - Recreates client if configuration changes
-    - Better error handling and recovery
-    """
-    if not config.AZURE_FOUNDRY_ENDPOINT or not config.AZURE_FOUNDRY_API_KEY:
-        raise HTTPException(
-            status_code=500, 
-            detail="Azure Foundry configuration is missing. Please check AZURE_FOUNDRY_ENDPOINT and AZURE_FOUNDRY_API_KEY."
-        )
-    
-    try:
-        return AzureOpenAI(
-            azure_endpoint=config.AZURE_FOUNDRY_ENDPOINT,
-            api_key=config.AZURE_FOUNDRY_API_KEY,
-            api_version=config.API_VERSION,
-        )
-    except Exception as e:
-        logger.error(f"Failed to create Azure OpenAI client: {str(e)}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to initialize Azure OpenAI client: {str(e)}"
-        )
-
-# Function to clear cache if needed (for configuration changes)
-def clear_azure_client_cache():
-    """Clear the cached Azure OpenAI client"""
-    get_azure_openai_client.cache_clear()
-
-# Dependency for API key validation
-async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    """Verify API token - implement your auth logic here"""
-    # For now, we'll do basic validation
-    # In production, implement proper JWT or API key validation
-    if not credentials.credentials:
-        raise HTTPException(status_code=401, detail="Invalid authentication credentials")
-    return credentials.credentials
-
 # Health check endpoint
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
     """Health check endpoint"""
+    settings = get_settings()
     return HealthResponse(
         status="healthy",
-        timestamp=datetime.now(),
-        version="1.0.0"
+        message="Azure Foundry API is running",
+        azure_endpoint=settings.AZURE_FOUNDRY_ENDPOINT
     )
 
 # Root endpoint
@@ -144,21 +66,17 @@ async def chat_completion(
     Chat completion using Azure Foundry model
     """
     try:
-        # Prepare the chat messages in the correct format
-        messages = [
-            {
-                "role": "system",
-                "content": "You are a helpful AI assistant."
-            },
-            {
-                "role": "user", 
-                "content": request.message
-            }
-        ]
+        settings = get_settings()
+        
+        # Convert our ChatMessage objects to the format expected by Azure OpenAI
+        messages = cast(Any, [
+            {"role": message.role, "content": message.content}
+            for message in request.messages
+        ])
         
         # Generate the completion
         completion = client.chat.completions.create(
-            model=config.AZURE_FOUNDRY_DEPLOYMENT_NAME,
+            model=settings.AZURE_FOUNDRY_MODEL,
             messages=messages,
             max_tokens=request.max_tokens,
             temperature=request.temperature,
@@ -166,18 +84,32 @@ async def chat_completion(
             frequency_penalty=0,
             presence_penalty=0,
             stop=None,
-            stream=False
+            stream=False  # Force non-streaming for now
         )
         
-        # Extract response
-        ai_response = completion.choices[0].message.content
-        tokens_used = completion.usage.total_tokens if completion.usage else None
+        # Convert Azure OpenAI response to our format
+        choices = []
+        for choice in completion.choices:
+            choices.append({
+                "index": choice.index,
+                "message": {
+                    "role": choice.message.role,
+                    "content": choice.message.content
+                },
+                "finish_reason": choice.finish_reason
+            })
         
         return ChatResponse(
-            response=ai_response,
-            model=request.model or config.AZURE_FOUNDRY_DEPLOYMENT_NAME,
-            timestamp=datetime.now(),
-            tokens_used=tokens_used
+            id=completion.id,
+            object=completion.object,
+            created=completion.created,
+            model=completion.model,
+            choices=choices,
+            usage={
+                "prompt_tokens": completion.usage.prompt_tokens if completion.usage else 0,
+                "completion_tokens": completion.usage.completion_tokens if completion.usage else 0,
+                "total_tokens": completion.usage.total_tokens if completion.usage else 0
+            }
         )
         
     except Exception as e:
@@ -189,30 +121,31 @@ async def chat_completion(
 # Generate text endpoint
 @app.post("/api/v1/generate")
 async def generate_text(
-    request: ChatRequest,
+    request: GenerateRequest,
     token: str = Depends(verify_token),
     client: AzureOpenAI = Depends(get_azure_openai_client)
 ):
     """
     Text generation endpoint - optimized for single-turn text generation tasks
-    Future: Add business logic for content filtering, custom prompts, etc.
     """
     try:
-        # Prepare messages for text generation (simpler system prompt)
-        messages = [
+        settings = get_settings()
+        
+        # Prepare messages for text generation
+        messages = cast(Any, [
             {
                 "role": "system",
                 "content": "You are a helpful AI assistant focused on generating high-quality text content."
             },
             {
                 "role": "user", 
-                "content": request.message
+                "content": request.prompt
             }
-        ]
+        ])
         
         # Generate the completion
         completion = client.chat.completions.create(
-            model=config.AZURE_FOUNDRY_DEPLOYMENT_NAME,
+            model=settings.AZURE_FOUNDRY_MODEL,
             messages=messages,
             max_tokens=request.max_tokens,
             temperature=request.temperature,
@@ -223,8 +156,6 @@ async def generate_text(
             stream=False
         )
         
-        
-        
         # Extract response
         generated_text = completion.choices[0].message.content
         tokens_used = completion.usage.total_tokens if completion.usage else None
@@ -232,7 +163,7 @@ async def generate_text(
         # Return with generate-specific response format
         return {
             "generated_text": generated_text,
-            "model": request.model or config.AZURE_FOUNDRY_DEPLOYMENT_NAME,
+            "model": request.model or settings.AZURE_FOUNDRY_MODEL,
             "timestamp": datetime.now(),
             "tokens_used": tokens_used,
             "generation_type": "text_completion"
@@ -250,20 +181,20 @@ async def list_models():
     """
     List available models
     """
+    settings = get_settings()
+    
     # For now, return a static list
     # In production, you might query Azure Foundry for available models
     models = [
         ModelInfo(
-            name="gpt-4.1",
-            description="gpt-4.1 model for advanced text generation",
-            endpoint=f"{config.AZURE_FOUNDRY_ENDPOINT}/openai/deployments/{config.AZURE_FOUNDRY_DEPLOYMENT_NAME}",
-            status="active"
+            id="gpt-4o",
+            object="model",
+            owned_by="azure-foundry"
         ),
         ModelInfo(
-            name="gpt-35-turbo",
-            description="GPT-3.5 Turbo for faster responses",
-            endpoint=f"{config.AZURE_FOUNDRY_ENDPOINT}/openai/deployments/gpt-35-turbo",
-            status="active"
+            id="gpt-35-turbo",
+            object="model",
+            owned_by="azure-foundry"
         )
     ]
     return models

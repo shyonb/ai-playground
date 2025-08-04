@@ -65,9 +65,14 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
 ### 3. Test the API
 
+The easiest way to test the API is using the interactive chat terminal:
+
 ```powershell
-# Run test suite (make sure venv is activated)
-python test_client.py --key any-test-key-works
+# Run interactive chat terminal (recommended)
+python scripts/chat_terminal.py
+
+# Or run comprehensive API tests
+python scripts/test_api.py --key any-test-key-works
 
 # Or test individual endpoints with curl
 curl -X POST "http://localhost:8000/api/v1/chat/completions" -H "Authorization: Bearer any-test-key-works" -H "Content-Type: application/json" -d '{\"message\": \"Hello, how are you?\", \"model\": \"gpt-4.1\", \"max_tokens\": 100}'
@@ -226,16 +231,30 @@ Structured logging with:
 
 ```
 azure-foundry-api/
-├── main.py                 # FastAPI application
-├── models.py              # Pydantic models
-├── config.py              # Configuration management
-├── azure_foundry_client.py # Azure Foundry client
-├── test_client.py         # Test utilities
-├── run_dev.py            # Development server
+├── main.py                 # FastAPI application entry point
+├── run_dev.py             # Development server launcher
 ├── requirements.txt       # Python dependencies
 ├── Dockerfile            # Container definition
 ├── azure.yaml           # Azure Developer CLI config
-├── .env.template        # Environment template
+├── .env                 # Environment variables (local)
+├── app/                 # Core application code
+│   ├── __init__.py      # Package initialization
+│   ├── config.py        # Configuration management
+│   ├── models.py        # Pydantic models
+│   └── dependencies.py  # FastAPI dependencies
+├── scripts/             # Utility scripts
+│   ├── README.md        # Scripts documentation
+│   ├── chat_terminal.py # Interactive API testing client
+│   ├── test_api.py      # Comprehensive API tests
+│   ├── test_azure_client.py # Azure client connection tests
+│   └── test_client.py   # Legacy test client
+├── tests/               # Test framework
+│   └── __init__.py      # Test package initialization
+├── docs/                # Documentation
+│   ├── DEPLOYMENT.md    # Deployment guide
+│   ├── GITHUB_SETUP.md  # GitHub integration guide
+│   ├── QUICK_START.md   # Quick start guide
+│   └── RESTRUCTURE_SUMMARY.md # Project restructuring notes
 └── infra/               # Infrastructure as Code
     ├── main.bicep       # Main Bicep template
     ├── resources.bicep  # Resource definitions
@@ -245,15 +264,43 @@ azure-foundry-api/
 ### Testing
 
 ```bash
-# Run all tests
-python test_client.py
+# Run comprehensive API tests
+python scripts/test_api.py
 
-# Test specific endpoint
-python test_client.py --url http://localhost:8000
+# Run interactive chat terminal (recommended for testing)
+python scripts/chat_terminal.py
+
+# Test Azure client connection
+python scripts/test_azure_client.py
+
+# Test specific endpoint with legacy client
+python scripts/test_client.py --key any-test-key-works
 
 # Test deployed API
-python test_client.py --url https://your-frontdoor.azurefd.net
+python scripts/test_api.py --url https://your-frontdoor.azurefd.net
 ```
+
+### Interactive Testing
+
+The project includes an interactive chat terminal for easy API testing:
+
+```bash
+# Start the interactive terminal client
+python scripts/chat_terminal.py
+```
+
+**Available Commands:**
+- `/help` - Show available commands
+- `/health` - Check API health status
+- `/models` - List available models
+- `/mode` - Switch between chat and generate modes
+- `/history` - Show conversation history
+- `/clear` - Clear conversation history
+- `/quit` - Exit the terminal
+
+**Testing Modes:**
+- **Chat Mode**: Multi-turn conversations with context history
+- **Generate Mode**: Single-turn text generation requests
 
 ### Contributing
 
