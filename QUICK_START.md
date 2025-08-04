@@ -34,38 +34,58 @@ azure-foundry-api/
     └── README.md           # Complete project documentation
 ```
 
-## 🚀 Quick Start (3 Steps)
+## 🚀 Quick Start (4 Steps)
 
-### Step 1: Configure Your Azure Foundry Details
-```bash
-# Copy the environment template
-copy .env.template .env
+### Step 1: Set Up Python Virtual Environment
+```powershell
+# Create a virtual environment
+python -m venv venv
 
-# Edit .env with your Azure Foundry information:
-# AZURE_FOUNDRY_ENDPOINT=https://your-foundry-endpoint.openai.azure.com
-# AZURE_FOUNDRY_API_KEY=your-api-key-here
-# AZURE_FOUNDRY_DEPLOYMENT_NAME=gpt-4
+# Activate the virtual environment (Windows PowerShell)
+.\venv\Scripts\Activate.ps1
+
+# If you get execution policy error, run this first:
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+
+# Install dependencies
+pip install -r requirements.txt
 ```
 
-### Step 2: Test Locally (Optional)
-```bash
+### Step 2: Configure Your Azure Foundry Details
+```powershell
+# Create .env file with your Azure Foundry information
+@"
+AZURE_FOUNDRY_ENDPOINT=https://your-foundry-endpoint.openai.azure.com
+AZURE_FOUNDRY_API_KEY=your-api-key-here
+AZURE_FOUNDRY_DEPLOYMENT_NAME=gpt-4.1
+AZURE_FOUNDRY_API_VERSION=2025-01-01-preview
+"@ | Out-File -FilePath .env -Encoding utf8
+```
+
+### Step 3: Test Locally
+```powershell
+# Make sure your virtual environment is activated
+.\venv\Scripts\Activate.ps1
+
 # Run the development server
 python run_dev.py
 
-# Test the API
-python test_client.py
+# In another terminal (with venv activated), test the API
+python test_client.py --url http://localhost:8000 --key any-test-key-works
 ```
 
-### Step 3: Deploy to Azure
+**Note**: The current authentication accepts ANY Bearer token for testing. You can use any string as the API key (e.g., "test-key", "my-api-key", etc.).
+
+### Step 4: Deploy to Azure
 ```powershell
-# Using PowerShell (Windows)
+# Using PowerShell (Windows) - make sure venv is activated
 .\deploy.ps1 -EnvironmentName "my-foundry-api" -Location "eastus" -AzureFoundryEndpoint "https://your-endpoint.openai.azure.com" -AzureFoundryApiKey "your-api-key"
 ```
 
 OR
 
 ```bash
-# Using Azure Developer CLI directly
+# Using Azure Developer CLI directly (make sure venv is activated)
 azd up
 ```
 
@@ -74,9 +94,11 @@ azd up
 ### 💬 Chat Completion
 ```bash
 POST /api/v1/chat/completions
+Authorization: Bearer any-test-key-works
+
 {
   "message": "Hello, how are you?",
-  "model": "gpt-4",
+  "model": "gpt-4.1",
   "max_tokens": 100,
   "temperature": 0.7
 }
@@ -85,9 +107,11 @@ POST /api/v1/chat/completions
 ### 📝 Text Generation
 ```bash
 POST /api/v1/generate
+Authorization: Bearer any-test-key-works
+
 {
   "message": "Write a poem about AI",
-  "model": "gpt-4",
+  "model": "gpt-4.1",
   "max_tokens": 200
 }
 ```
@@ -145,7 +169,7 @@ curl -X POST "https://your-frontdoor-url.azurefd.net/api/v1/chat/completions" \
   -H "Content-Type: application/json" \
   -d '{
     "message": "Explain quantum computing",
-    "model": "gpt-4",
+    "model": "gpt-4.1",
     "max_tokens": 500
   }'
 ```

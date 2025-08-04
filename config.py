@@ -11,8 +11,8 @@ class Settings:
     # Azure Foundry Configuration
     AZURE_FOUNDRY_ENDPOINT: str = os.getenv("AZURE_FOUNDRY_ENDPOINT", "")
     AZURE_FOUNDRY_API_KEY: str = os.getenv("AZURE_FOUNDRY_API_KEY", "")
-    AZURE_FOUNDRY_DEPLOYMENT_NAME: str = os.getenv("AZURE_FOUNDRY_DEPLOYMENT_NAME", "gpt-4")
-    AZURE_FOUNDRY_API_VERSION: str = os.getenv("AZURE_FOUNDRY_API_VERSION", "2024-02-15-preview")
+    AZURE_FOUNDRY_DEPLOYMENT_NAME: str = os.getenv("AZURE_FOUNDRY_DEPLOYMENT_NAME", "gpt-4.1")
+    AZURE_FOUNDRY_API_VERSION: str = os.getenv("AZURE_FOUNDRY_API_VERSION", "2025-01-01-preview")
     
     # Application Configuration
     APP_NAME: str = "Azure Foundry API"
