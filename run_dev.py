@@ -5,7 +5,7 @@ Development server script
 import uvicorn
 import os
 from dotenv import load_dotenv
-from config import get_settings
+from app.config import get_settings
 
 def main():
     """Run the development server"""

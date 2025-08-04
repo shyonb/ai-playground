@@ -6,6 +6,7 @@ from functools import lru_cache
 from typing import Optional
 from dotenv import load_dotenv
 
+
 class Settings:
     """Application settings"""
     
@@ -17,6 +18,7 @@ class Settings:
         self.AZURE_FOUNDRY_ENDPOINT: str = os.getenv("AZURE_FOUNDRY_ENDPOINT", "")
         self.AZURE_FOUNDRY_API_KEY: str = os.getenv("AZURE_FOUNDRY_API_KEY", "")
         self.AZURE_FOUNDRY_DEPLOYMENT_NAME: str = os.getenv("AZURE_FOUNDRY_DEPLOYMENT_NAME", "gpt-4.1")
+        self.AZURE_FOUNDRY_MODEL: str = os.getenv("AZURE_FOUNDRY_MODEL", "gpt-4.1")  # Alias for deployment name
         self.AZURE_FOUNDRY_API_VERSION: str = os.getenv("AZURE_FOUNDRY_API_VERSION", "2025-01-01-preview")
         
         # Application Configuration
@@ -77,7 +79,18 @@ class Settings:
         
         return errors
 
+
 @lru_cache()
 def get_settings() -> Settings:
     """Get cached settings instance"""
     return Settings()
+
+
+# Simple config for backward compatibility
+class Config:
+    def __init__(self):
+        settings = get_settings()
+        self.AZURE_FOUNDRY_ENDPOINT = settings.AZURE_FOUNDRY_ENDPOINT
+        self.AZURE_FOUNDRY_API_KEY = settings.AZURE_FOUNDRY_API_KEY
+        self.AZURE_FOUNDRY_DEPLOYMENT_NAME = settings.AZURE_FOUNDRY_DEPLOYMENT_NAME
+        self.API_VERSION = settings.AZURE_FOUNDRY_API_VERSION
