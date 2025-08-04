@@ -1,0 +1,16 @@
+name: foundry-api
+metadata:
+  template: python-fastapi@1.0.0
+services:
+  api:
+    project: .
+    host: containerapp
+    language: python
+    docker:
+      path: ./Dockerfile
+      context: .
+    env:
+      - AZURE_FOUNDRY_ENDPOINT
+      - AZURE_FOUNDRY_API_KEY
+      - AZURE_FOUNDRY_DEPLOYMENT_NAME
+      - AZURE_FOUNDRY_API_VERSION
