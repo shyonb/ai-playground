@@ -6,11 +6,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 from functools import lru_cache
+from dotenv import load_dotenv
 import os
 import logging
 from typing import Optional, List
 from datetime import datetime
 from openai import AzureOpenAI
+
+# Load environment variables
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
