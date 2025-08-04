@@ -5,6 +5,7 @@ from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
+from functools import lru_cache
 import os
 import logging
 from typing import Optional, List
@@ -69,14 +70,39 @@ class Config:
 
 config = Config()
 
-# Initialize Azure OpenAI client
-def get_azure_openai_client():
-    """Get Azure OpenAI client"""
-    return AzureOpenAI(
-        azure_endpoint=config.AZURE_FOUNDRY_ENDPOINT,
-        api_key=config.AZURE_FOUNDRY_API_KEY,
-        api_version=config.API_VERSION,
-    )
+# Azure OpenAI client dependency with proper caching and error handling
+@lru_cache()
+def get_azure_openai_client() -> AzureOpenAI:
+    """
+    Get Azure OpenAI client with LRU caching
+    This approach:
+    - Caches the client but allows for invalidation
+    - Recreates client if configuration changes
+    - Better error handling and recovery
+    """
+    if not config.AZURE_FOUNDRY_ENDPOINT or not config.AZURE_FOUNDRY_API_KEY:
+        raise HTTPException(
+            status_code=500, 
+            detail="Azure Foundry configuration is missing. Please check AZURE_FOUNDRY_ENDPOINT and AZURE_FOUNDRY_API_KEY."
+        )
+    
+    try:
+        return AzureOpenAI(
+            azure_endpoint=config.AZURE_FOUNDRY_ENDPOINT,
+            api_key=config.AZURE_FOUNDRY_API_KEY,
+            api_version=config.API_VERSION,
+        )
+    except Exception as e:
+        logger.error(f"Failed to create Azure OpenAI client: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to initialize Azure OpenAI client: {str(e)}"
+        )
+
+# Function to clear cache if needed (for configuration changes)
+def clear_azure_client_cache():
+    """Clear the cached Azure OpenAI client"""
+    get_azure_openai_client.cache_clear()
 
 # Dependency for API key validation
 async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
@@ -107,15 +133,13 @@ async def root():
 @app.post("/api/v1/chat/completions", response_model=ChatResponse)
 async def chat_completion(
     request: ChatRequest,
-    token: str = Depends(verify_token)
+    token: str = Depends(verify_token),
+    client: AzureOpenAI = Depends(get_azure_openai_client)
 ):
     """
     Chat completion using Azure Foundry model
     """
     try:
-        # Get Azure OpenAI client
-        client = get_azure_openai_client()
-        
         # Prepare the chat messages in the correct format
         messages = [
             {
@@ -154,27 +178,67 @@ async def chat_completion(
         
     except Exception as e:
         logger.error(f"Error calling Azure Foundry: {str(e)}")
+        # Clear cache in case of client issues
+        clear_azure_client_cache()
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 # Generate text endpoint
 @app.post("/api/v1/generate")
 async def generate_text(
     request: ChatRequest,
-    token: str = Depends(verify_token)
+    token: str = Depends(verify_token),
+    client: AzureOpenAI = Depends(get_azure_openai_client)
 ):
     """
-    Text generation endpoint - simple wrapper around chat completion
+    Text generation endpoint - optimized for single-turn text generation tasks
+    Future: Add business logic for content filtering, custom prompts, etc.
     """
     try:
-        # Use the chat completion endpoint internally
-        response = await chat_completion(request, token)
+        # Prepare messages for text generation (simpler system prompt)
+        messages = [
+            {
+                "role": "system",
+                "content": "You are a helpful AI assistant focused on generating high-quality text content."
+            },
+            {
+                "role": "user", 
+                "content": request.message
+            }
+        ]
+        
+        # Generate the completion
+        completion = client.chat.completions.create(
+            model=config.AZURE_FOUNDRY_DEPLOYMENT_NAME,
+            messages=messages,
+            max_tokens=request.max_tokens,
+            temperature=request.temperature,
+            top_p=0.95,
+            frequency_penalty=0,
+            presence_penalty=0,
+            stop=None,
+            stream=False
+        )
+        
+        
+        
+        # Extract response
+        generated_text = completion.choices[0].message.content
+        tokens_used = completion.usage.total_tokens if completion.usage else None
+        
+        # Return with generate-specific response format
         return {
-            "generated_text": response.response,
-            "model": response.model,
-            "timestamp": response.timestamp
+            "generated_text": generated_text,
+            "model": request.model or config.AZURE_FOUNDRY_DEPLOYMENT_NAME,
+            "timestamp": datetime.now(),
+            "tokens_used": tokens_used,
+            "generation_type": "text_completion"
         }
+        
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error in text generation: {str(e)}")
+        # Clear cache in case of client issues
+        clear_azure_client_cache()
+        raise HTTPException(status_code=500, detail=f"Text generation error: {str(e)}")
 
 # List available models
 @app.get("/api/v1/models", response_model=List[ModelInfo])
